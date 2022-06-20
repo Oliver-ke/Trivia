@@ -8,25 +8,48 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+
+def make_pagination(req, selection):
+    page = req.args.get("page", 1, type=int)
+    pg_start = (page - 1) * QUESTIONS_PER_PAGE
+    pg_end = pg_start + QUESTIONS_PER_PAGE
+
+    questions = [question.format() for question in selection]
+    pg_questions = questions[pg_start:pg_end]
+
+    return pg_questions
+
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
 
-    """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-    """
+    CORS(app)
 
-    """
-    @TODO: Use the after_request decorator to set Access-Control-Allow
-    """
+    @app.after_request
+    def after_request(response):
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
 
+    """ description
+    endpoint to get all categories
     """
-    @TODO:
-    Create an endpoint to handle GET requests
-    for all available categories.
-    """
-
+    @app.route("/categories", methods=['GET'])
+    def get_categories():
+        categories = Category.query.order_by(Category.id).all()
+        category_array = [category.format() for category in categories]
+        return jsonify(
+            {
+                "success": True,
+                "categories": category_array,
+            }
+        )
 
     """
     @TODO:
@@ -40,6 +63,27 @@ def create_app(test_config=None):
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
+    @app.route("/questions", methods=['GET'])
+    def get_questions():
+        categories = Category.query.order_by(Category.id).all()
+
+        category_obj = {}
+        for category in categories:
+            formatted_category = category.format()
+            id = formatted_category['id']
+            category_obj[id] = formatted_category['type']
+
+        questions = Question.query.order_by(Question.id).all()
+        current_questions = make_pagination(request, questions)
+        return jsonify(
+            {
+                "success": True,
+                "questions": current_questions,
+                "total_questions": len(questions),
+                "categories": category_obj,
+                "current_category": "All"
+            }
+        )
 
     """
     @TODO:
@@ -99,4 +143,3 @@ def create_app(test_config=None):
     """
 
     return app
-

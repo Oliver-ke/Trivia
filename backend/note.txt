@@ -1,0 +1,13 @@
+[Some useful commands]
+
+-> Creating a python virtual Environment
+python3 -m venv env
+
+-> Activating the virtual environment
+source env/bin/activate
+
+-> Install packages in requirement file
+pip install -r requirements.txt
+
+-> Add postgres to path
+export PATH=$PATH:/Library/PostgreSQL/14/bin

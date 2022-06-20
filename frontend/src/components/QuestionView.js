@@ -145,7 +145,6 @@ class QuestionView extends Component {
                   this.getByCategory(id);
                 }}
               >
-                {this.state.categories[id]}
                 <img
                   className='category'
                   alt={`${this.state.categories[id].toLowerCase()}`}
