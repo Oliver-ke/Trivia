@@ -137,7 +137,6 @@ def create_app(test_config=None):
                     "questions": pag_question_array,
                     "total_questions": len(questions),
                     "categories": category_payload,
-                    # "added": new_question.format(),
                     "current_category": "All",
                 }
             )
