@@ -46,10 +46,6 @@ def create_app(test_config=None):
         )
         return response
 
-    """ description
-    endpoint to get all categories
-    """
-
     @app.route("/categories", methods=["GET"])
     def get_categories():
         categories = Category.query.order_by(Category.id).all()
@@ -80,13 +76,11 @@ def create_app(test_config=None):
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id):
+        question = Question.query.filter(Question.id == question_id).one_or_none()
+        if question is None:
+            abort(404)
+
         try:
-            question = Question.query.filter(Question.id == question_id).one_or_none()
-
-            if question is None:
-                # Question does not exist
-                abort(404)
-
             question.delete()
             questions = Question.query.order_by(Question.id).all()
             questions_list = make_pagination(request, questions)
@@ -104,7 +98,8 @@ def create_app(test_config=None):
                 }
             )
 
-        except:
+        except Exception as e:
+            print(e.args)
             abort(422)
 
     @app.route("/questions", methods=["POST"])
@@ -116,6 +111,11 @@ def create_app(test_config=None):
         category = payload.get("category", None)
         difficulty = payload.get("difficulty", None)
 
+        category_exist = Category.query.filter(Category.id == category).one_or_none()
+
+        if category_exist is None:
+            abort(400)
+
         try:
             new_question = Question(
                 question=question,
@@ -123,6 +123,7 @@ def create_app(test_config=None):
                 category=category,
                 difficulty=difficulty,
             )
+
             new_question.insert()
             questions = Question.query.order_by(Question.id).all()
             pag_question_array = make_pagination(request, questions)
@@ -136,6 +137,7 @@ def create_app(test_config=None):
                     "questions": pag_question_array,
                     "total_questions": len(questions),
                     "categories": category_payload,
+                    # "added": new_question.format(),
                     "current_category": "All",
                 }
             )
@@ -189,7 +191,7 @@ def create_app(test_config=None):
     def play_quiz():
         payload = request.get_json()
         previous_questions = payload.get("previous_questions", [])
-        quiz_category = payload.get("quiz_category", "All")
+        quiz_category = payload.get("quiz_category", None)
         selection = []
         if quiz_category["type"] == "All":
             selection = Question.query.order_by(Question.id).all()
@@ -220,8 +222,15 @@ def create_app(test_config=None):
     @app.errorhandler(422)
     def unprocessable(error):
         return (
-            sonify({"success": False, "error": 422, "message": "unprocessable"}),
+            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
             422,
+        )
+
+    @app.errorhandler(400)
+    def bad_input(error):
+        return (
+            jsonify({"success": False, "error": 400, "message": "bad input"}),
+            400,
         )
 
     return app
