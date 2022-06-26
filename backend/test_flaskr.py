@@ -64,12 +64,12 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_delete_question(self):
         """DELETE request should delete question by id"""
-        QUESTION_ID = 1
+        QUESTION_ID = 5
         res = self.client().delete("/questions/{}".format(QUESTION_ID))
         payload = res.get_json()
         success = payload["success"]
-        self.assertTrue(success)
         self.assertEqual(res.status_code, 200)
+        self.assertTrue(success)
 
     def test_delete_question_err_404(self):
         """DELETE request should return 404 if question does not exist"""
