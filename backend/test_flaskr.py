@@ -5,9 +5,10 @@ from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app
 from models import setup_db, Question, Category
+from settings import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
-DATABASE_URL = "kelechi:kelechi96@localhost:5432"
-DATABASE_NAME = "trivia_test"
+DATABASE_URL = "{}:{}@{}".format(DB_USER, DB_PASSWORD, DB_HOST)
+DATABASE_NAME = "{}_test".format(DB_NAME)
 
 NEW_QUESTION_MOCK = {
     "question": "What is the status code for - I'm a teapot",
@@ -25,7 +26,8 @@ class TriviaTestCase(unittest.TestCase):
         self.app = create_app()
         self.client = self.app.test_client
         self.database_name = DATABASE_NAME
-        self.database_path = "postgres://{}/{}".format(DATABASE_URL, self.database_name)
+        self.database_path = "postgres://{}/{}".format(
+            DATABASE_URL, self.database_name)
         setup_db(self.app, self.database_path)
 
         # binds the app to the current context
@@ -122,11 +124,21 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(success)
         self.assertTrue(question1)
-        ## second question
+        # second question
         res = self.client().post("/quizzes", json=PAYLOAD)
         payload2 = res.get_json()
         question2 = payload2["question"]
         self.assertNotEqual(question1, question2)
+
+    def test_get_quizzes_err(self):
+        """POST should return 400 status code for bad quiz input"""
+        PAYLOAD = {"previous_questions": "BAD_INPUT",
+                   "quiz_category": {"type": "All"}}
+        res = self.client().post("/quizzes", json=PAYLOAD)
+        payload = res.get_json()
+        success = payload["success"]
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(success)
 
 
 # Make the tests conveniently executable

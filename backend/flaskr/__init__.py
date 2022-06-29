@@ -76,7 +76,8 @@ def create_app(test_config=None):
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id):
-        question = Question.query.filter(Question.id == question_id).one_or_none()
+        question = Question.query.filter(
+            Question.id == question_id).one_or_none()
         if question is None:
             abort(404)
 
@@ -111,7 +112,8 @@ def create_app(test_config=None):
         category = payload.get("category", None)
         difficulty = payload.get("difficulty", None)
 
-        category_exist = Category.query.filter(Category.id == category).one_or_none()
+        category_exist = Category.query.filter(
+            Category.id == category).one_or_none()
 
         if category_exist is None:
             abort(400)
@@ -169,7 +171,8 @@ def create_app(test_config=None):
     def get_question_by_category(category_id):
         try:
             # get current category
-            category = Category.query.filter(Category.id == category_id).one_or_none()
+            category = Category.query.filter(
+                Category.id == category_id).one_or_none()
             selection = Question.query.order_by(Question.id).filter(
                 Question.category == category_id
             )
@@ -190,38 +193,46 @@ def create_app(test_config=None):
     def play_quiz():
         payload = request.get_json()
         previous_questions = payload.get("previous_questions", [])
-        quiz_category = payload.get("quiz_category", None)
-        selection = []
-        if quiz_category["type"] == "All":
-            selection = Question.query.order_by(Question.id).all()
-        else:
-            selection = Question.query.order_by(Question.id).filter(
-                Question.category == quiz_category["id"]
-            )
-        questions = [question.format() for question in selection]
-        # filter to removed previous questions
-        result = [q for q in questions if q["id"] not in previous_questions]
+        if type(previous_questions) != list:
+            abort(400)
+        try:
+            quiz_category = payload.get("quiz_category", None)
+            selection = []
+            if quiz_category["type"] == "All":
+                selection = Question.query.order_by(Question.id).all()
+            else:
+                selection = Question.query.order_by(Question.id).filter(
+                    Question.category == quiz_category["id"]
+                )
+            questions = [question.format() for question in selection]
+            # filter to removed previous questions
+            result = [q for q in questions if q["id"]
+                      not in previous_questions]
 
-        max_idx = 0 if len(result) == 0 else len(result) - 1
-        question_idx = max_idx
+            max_idx = 0 if len(result) == 0 else len(result) - 1
+            question_idx = max_idx
 
-        if max_idx > 0:
-            # generate random number if item is not the last
-            question_idx = random.randint(0, max_idx)
-        question = "" if max_idx == 0 else result[question_idx]
-        return jsonify({"success": True, "question": question})
+            if max_idx > 0:
+                # generate random number if item is not the last
+                question_idx = random.randint(0, max_idx)
+            question = "" if max_idx == 0 else result[question_idx]
+            return jsonify({"success": True, "question": question})
+        except:
+            abort(500)
 
     @app.errorhandler(404)
     def not_found(error):
         return (
-            jsonify({"success": False, "error": 404, "message": "resource not found"}),
+            jsonify({"success": False, "error": 404,
+                    "message": "resource not found"}),
             404,
         )
 
     @app.errorhandler(422)
     def unprocessable(error):
         return (
-            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
+            jsonify({"success": False, "error": 422,
+                    "message": "unprocessable"}),
             422,
         )
 
@@ -230,6 +241,14 @@ def create_app(test_config=None):
         return (
             jsonify({"success": False, "error": 400, "message": "bad input"}),
             400,
+        )
+
+    @app.errorhandler(500)
+    def bad_input(error):
+        return (
+            jsonify({"success": False, "error": 500,
+                    "message": "internal server error"}),
+            500,
         )
 
     return app
